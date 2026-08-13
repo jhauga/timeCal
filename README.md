@@ -19,6 +19,8 @@
 - [Usage](#-usage)
 - [Time Units](#-time-units)
 - [Modes](#-modes)
+- [Time Difference](#-time-difference)
+- [Current Time](#-current-time)
 - [Examples](#-examples)
 - [Output Formats](#-output-formats)
 - [Contributing](#-contributing)
@@ -32,6 +34,12 @@
 - **Multiple Modes**: Calculate past times (default), future times, or use math expressions
 - **Flexible Units**: Support for seconds, minutes, hours, days, weeks, months, years, and quarters
 - **Constant Flags**: Quick shortcuts like `lm` (last month), `nw` (next week)
+- **Time Difference**: Calculate the duration between two clock times
+- **Duration Adjustments**: Mix time expressions with two clock times to add to or subtract from the duration
+- **Time Shifting**: Shift a single clock time with time expressions, as if it were the current time
+- **Format Inversion**: Convert a single clock time between AM/PM and 24-hour formats
+- **Current Time Display**: Show the current time as an AM/PM or 24-hour clock with `-c`
+- **Current Time Override**: Change the current time used by clock-time features with `-s`, stored in a configurable JSON config file
 - **Smart Formatting**: Automatically formats output based on time range
 - **Math Mode**: Perform complex calculations with `+` and `-` operators
 - **Error Handling**: Helpful error messages and suggestions
@@ -76,6 +84,8 @@ timecal [options] <time_expression>
 | `-f, --future` | Calculate time in the future |
 | `-p, --past` | Calculate time in the past (default) |
 | `-m, --math` | Use mathematical expressions with `+` and `-` operators |
+| `-c, --current` | Show the current time. Optional argument: `12` (default, AM/PM clock) or `24` (24-hour clock) |
+| `-s, --set-current` | Change the current time used by clock-time features, or pass `clear` to return to the system time |
 
 ---
 
@@ -171,6 +181,133 @@ Quick shortcuts for common time references:
 timecal lm        # ✓ Correct
 timecal nm        # ✗ Error: Invalid past flag "nm". Did you mean "lm"?
 timecal -f lm     # ✗ Error: Invalid future flag "lm". Did you mean "nm"?
+```
+
+---
+
+## 🕐 Time Difference
+
+Pass clock times instead of time expressions to work with clock values:
+two clock times produce a duration, a single clock time with time
+expressions is shifted, and a single clock time alone is converted to the
+opposite clock format.
+
+### Clock Time Syntax
+
+```text
+H | H:M | H:M:S    with optional AM/PM suffix
+```
+
+- With `AM`/`PM`: 12-hour format (`12AM` is midnight, `12PM` is noon)
+- Without `AM`/`PM`: 24-hour format (`00` through `23`)
+- The two formats can be mixed freely in one command
+- Separators: `:` and `.` are both accepted (`13:10:15` and `13.10.15` are equivalent)
+- `AM`/`PM` may also follow the time as a separate word (`9:00 PM` equals `9:00PM`)
+
+### Two Clock Times
+
+The difference is measured from the first time to the second. If the second
+time is earlier, the calculation wraps past midnight.
+
+```bash
+timecal 12:10:00AM 1:25:25PM   # Output: 13h 15m 25s
+timecal 12AM 1PM               # Output: 13h 0m 0s
+timecal 00:10:00 13:35:10      # Output: 13h 25m 10s
+timecal 00 13                  # Output: 13h 0m 0s
+timecal 12:10:00AM 13:25:25    # Output: 13h 15m 25s (mixed formats)
+timecal 11PM 7AM               # Output: 8h 0m 0s (wraps past midnight)
+```
+
+### One Clock Time (Format Inversion)
+
+A single clock time on its own is converted to the opposite clock format:
+24-hour input renders as an AM/PM clock, and AM/PM input renders as a
+24-hour clock. Seconds appear only when the input included them.
+
+```bash
+timecal 21:00                  # Output: 9:00 PM
+timecal 9:00PM                 # Output: 21:00
+timecal 9:00 PM                # Output: 21:00
+timecal 12:05AM                # Output: 00:05
+timecal 21:00:30               # Output: 9:00:30 PM
+```
+
+### One Clock Time with Expressions (Time Shifting)
+
+Time expressions mixed with a single clock time shift it, as if the clock
+time were the current time. Unsigned expressions follow past mode by
+default (use `-f` for future); `+`/`-` expressions apply their own
+operators. The result wraps within a 24-hour clock.
+
+```bash
+timecal 3:15PM 15m             # Output: 3:00 PM (15m into the past)
+timecal 3:15PM +15m            # Output: 3:30 PM
+timecal -f 3:15PM 15m          # Output: 3:30 PM
+timecal 12:10AM 15m            # Output: 11:55 PM (wraps)
+```
+
+### Two Clock Times with Expressions (Duration Adjustments)
+
+Time expressions mixed with two clock times adjust the resulting
+duration. An unsigned or `+` expression adds to the duration; a `-`
+expression subtracts from it. A negative adjusted duration wraps back
+within a 24-hour clock.
+
+```bash
+timecal 12AM 1PM 30m           # Output: 13h 30m 0s
+timecal 12AM 1PM -30m          # Output: 12h 30m 0s
+timecal 12AM 1PM 1h +5m        # Output: 14h 5m 0s
+timecal 12AM 1PM 1d            # Output: 37h 0m 0s
+timecal 12AM 1PM -14h          # Output: 23h 0m 0s (wraps)
+```
+
+---
+
+## 🕒 Current Time
+
+### Show the Current Time (`-c`, `--current`)
+
+Displays the current time as a clock with seconds. An optional argument
+selects the clock format: `12` (default, AM/PM clock) or `24`
+(24-hour clock).
+
+```bash
+timecal -c                     # Output: 1:10:15 PM
+timecal -c 12                  # Output: 1:10:15 PM
+timecal -c 24                  # Output: 13:10:15
+```
+
+### Override the Current Time (`-s`, `--set-current`)
+
+Changes the current time shown by the `-c` display. Accepted inputs:
+`H:M`, `H:M:S`, `H:M[AM|PM]`, or `H:M:S[AM|PM]`. Pass `clear` to return
+to the system time.
+
+```bash
+timecal -s 1:10:15PM           # Output: Current time set to 1:10:15 PM
+timecal -s 13:10               # Output: Current time set to 1:10:00 PM
+timecal -c                     # Output: 1:10:15 PM (uses the override)
+timecal -s clear               # Output: Current time override cleared. Using system time.
+```
+
+The override does not affect the past/future date calculations, which
+always use the system clock.
+
+### Config File
+
+The override is stored in a JSON config file. By default it lives at
+`.timecal.json` in your home directory (`~/.timecal.json` on macOS and
+Linux, `C:\Users\<user>\.timecal.json` on Windows). Set the
+`TIMECAL_CONFIG` environment variable to use a different file path.
+
+```json
+{
+  "currentTime": {
+    "hours": 13,
+    "minutes": 10,
+    "seconds": 15
+  }
+}
 ```
 
 ---
@@ -281,7 +418,17 @@ Shows date and day of week only:
 01-05-2026 Monday
 ```
 
-**Format Pattern**: `MM-DD-YYYY DayName HH:MM AM/PM`
+### Time Difference (clock time inputs)
+
+Shows the duration in hours, minutes, and seconds:
+
+```text
+13h 15m 25s
+13h 0m 0s
+8h 0m 0s
+```
+
+**Format Pattern**: `MM-DD-YYYY DayName HH:MM AM/PM` (dates) or `Hh Mm Ss` (durations)
 
 ---
 
@@ -329,15 +476,64 @@ Now you can use `timecal` command globally for testing.
 
 ## 📚 API
 
-While TimeCal is primarily a CLI tool, you can also use its modules programmatically:
+While TimeCal is primarily a CLI tool, you can also use it programmatically:
 
 ```javascript
-const { parseArguments } = require('@jhauga/timecal/lib/parser');
-const { calculate } = require('@jhauga/timecal/lib/calculator');
-const { formatOutput } = require('@jhauga/timecal/lib/formatter');
+const { timecal, diff } = require('@jhauga/timecal');
 
-const args = ['5d', '3h'];
-const parsed = parseArguments(args);
+// Run any CLI-style calculation
+console.log(timecal(['5d', '3h']));               // e.g., "02-22-2026 Saturday 9:49 PM"
+
+// Calculate the difference between two clock times
+console.log(diff('12:10:00AM', '1:25:25PM'));     // "13h 15m 25s"
+
+// Invert the clock format of a single clock time
+console.log(diff('21:00'));                       // "9:00 PM"
+console.log(diff('9:00PM'));                      // "21:00"
+```
+
+### `timecal(args)`
+
+Runs the full parse, calculate, and format pipeline.
+
+**Parameters:**
+
+- `args` (string[]): Arguments as they would be passed on the command line
+
+**Returns:**
+
+- `string`: Formatted output (a time, a date, or a duration)
+
+**Throws:**
+
+- `Error`: When an argument is invalid
+
+### `diff(start, [end])`
+
+Calculates the duration between two clock times, or inverts the clock
+format when only one clock time is given.
+
+**Parameters:**
+
+- `start` (string): Clock time (e.g., `"12:10:00AM"`, `"13:35:10"`, `"1PM"`)
+- `end` (string, optional): Second clock time; when omitted, `start` is converted to the opposite clock format (24-hour to AM/PM or back)
+
+**Returns:**
+
+- `string`: Formatted duration (e.g., `"13h 15m 25s"`) or inverted clock time (e.g., `"9:00 PM"`)
+
+**Throws:**
+
+- `Error`: When a clock time is invalid
+
+### Lower-Level Modules
+
+The individual pipeline modules are also exported:
+
+```javascript
+const { parseArguments, calculate, formatOutput } = require('@jhauga/timecal');
+
+const parsed = parseArguments(['5d', '3h']);
 const result = calculate(parsed);
 const output = formatOutput(result);
 

@@ -28,6 +28,8 @@ timecal [options] <time_expression>
 | `-f` | `--future` | Calculate future time |
 | `-p` | `--past` | Calculate past time (default) |
 | `-m` | `--math` | Math mode with +/- |
+| `-c` | `--current` | Show current time (`12` default, or `24`) |
+| `-s` | `--set-current` | Set current time override (`clear` to reset) |
 
 ---
 
@@ -100,6 +102,40 @@ timecal -5d               # Shortcut: 5 days ago
 
 ---
 
+## Time Difference
+
+Pass one or two clock times (`H`, `H:M`, or `H:M:S`, with optional AM/PM) to
+get a duration. Without AM/PM, times are read as 24-hour format.
+
+```bash
+timecal 12:10:00AM 1:25:25PM   # 13h 15m 25s
+timecal 00:10:00 13:35:10      # 13h 25m 10s
+timecal 12AM 1PM               # 13h 0m 0s
+timecal 00 13                  # 13h 0m 0s
+timecal 11PM 7AM               # 8h 0m 0s (wraps past midnight)
+timecal 12AM 1PM 30m           # adjust: add 30 minutes (13h 30m 0s)
+timecal 12AM 1PM -30m          # adjust: subtract 30 minutes (12h 30m 0s)
+timecal 21:00                  # invert format: 9:00 PM
+timecal 9:00PM                 # invert format: 21:00
+timecal 3:15PM 15m             # shift: 3:00 PM (3:30 PM with +15m or -f)
+```
+
+---
+
+## Current Time
+
+```bash
+timecal -c                     # current time: 1:10:15 PM
+timecal -c 24                  # current time: 13:10:15
+timecal -s 1:10:15PM           # override the current time used
+timecal -s clear               # back to the system time
+```
+
+Override is stored in the JSON config file: `.timecal.json` in your home
+directory, or the path set in the `TIMECAL_CONFIG` environment variable.
+
+---
+
 ## Output Formats
 
 | Condition | Format | Example |
@@ -107,6 +143,7 @@ timecal -5d               # Shortcut: 5 days ago
 | < 24 hours | Time only | `1:10 AM` |
 | >= 24 hours + time units | Date + Day + Time | `02-27-2026 Thursday 1:10 AM` |
 | >= 24 hours, no time units | Date + Day | `02-27-2026 Thursday` |
+| Clock time inputs | Duration | `13h 15m 25s` |
 
 ---
 
@@ -181,4 +218,4 @@ timecal --help
 
 ---
 
-**TimeCal v1.0.0** | MIT License | Made with ❤️ by jhauga
+**TimeCal v1.1.0** | MIT License | Made with ❤️ by jhauga

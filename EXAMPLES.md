@@ -107,6 +107,157 @@ timecal lw
 timecal -f ny
 ```
 
+## Time Difference Examples
+
+### Two Clock Times
+
+```bash
+# Difference between two 12-hour clock times
+timecal 12:10:00AM 1:25:25PM
+# Output: 13h 15m 25s
+
+# Hours and minutes only
+timecal 12:00AM 1:00PM
+# Output: 13h 0m 0s
+
+# Hours only
+timecal 12AM 1PM
+# Output: 13h 0m 0s
+
+# 24-hour format (no AM/PM)
+timecal 00:10:00 13:35:10
+# Output: 13h 25m 10s
+
+timecal 00:00 13:10
+# Output: 13h 10m 0s
+
+timecal 00 13
+# Output: 13h 0m 0s
+
+# Mix 12-hour and 24-hour formats
+timecal 12:10:00AM 13:25:25
+# Output: 13h 15m 25s
+
+timecal 00:10:00 1:25PM
+# Output: 13h 15m 0s
+
+# Second time earlier than the first wraps past midnight
+timecal 11PM 7AM
+# Output: 8h 0m 0s
+```
+
+### One Clock Time (Format Inversion)
+
+A single clock time on its own converts to the opposite clock format.
+
+```bash
+# 24-hour input renders as an AM/PM clock
+timecal 21:00
+# Output: 9:00 PM
+
+# AM/PM input renders as a 24-hour clock
+timecal 9:00PM
+# Output: 21:00
+
+# AM/PM may be a separate word
+timecal 9:00 PM
+# Output: 21:00
+
+# Seconds are preserved when given
+timecal 21:00:30
+# Output: 9:00:30 PM
+
+# Midnight hour pads to 00
+timecal 12:05AM
+# Output: 00:05
+```
+
+### One Clock Time with Expressions (Time Shifting)
+
+Time expressions mixed with a single clock time shift it, as if the clock
+time were the current time.
+
+```bash
+# Unsigned expressions follow past mode by default
+timecal 3:15PM 15m
+# Output: 3:00 PM
+
+# Signed expressions apply their own operators
+timecal 3:15PM +15m
+# Output: 3:30 PM
+
+# Future mode shifts forward
+timecal -f 3:15PM 15m
+# Output: 3:30 PM
+
+# The result wraps within a 24-hour clock
+timecal 12:10AM 15m
+# Output: 11:55 PM
+```
+
+### Adjusting a Difference with Time Expressions
+
+Time expressions mixed with two clock times adjust the resulting duration.
+An unsigned or `+` expression adds; a `-` expression subtracts.
+
+```bash
+# Add 30 minutes to the difference
+timecal 12AM 1PM 30m
+# Output: 13h 30m 0s
+
+# Subtract 30 minutes from the difference
+timecal 12AM 1PM -30m
+# Output: 12h 30m 0s
+
+# Multiple adjustments
+timecal 12AM 1PM 1h +5m
+# Output: 14h 5m 0s
+
+# Day units work too
+timecal 12AM 1PM 1d
+# Output: 37h 0m 0s
+
+# A negative adjusted duration wraps back within a 24-hour clock
+timecal 12AM 1PM -14h
+# Output: 23h 0m 0s
+```
+
+### Current Time Display and Override
+
+```bash
+# Show the current time (AM/PM clock, default)
+timecal -c
+# Output: 1:10:15 PM
+
+# Show the current time as a 24-hour clock
+timecal -c 24
+# Output: 13:10:15
+
+# Override the current time shown by -c
+timecal -s 1:10:15PM
+# Output: Current time set to 1:10:15 PM
+
+# Return to the system time
+timecal -s clear
+# Output: Current time override cleared. Using system time.
+```
+
+### Time Difference Errors
+
+```bash
+# At most two clock times are allowed
+timecal 12AM 1PM 3PM
+# Error: Time difference accepts at most two clock times. Use -h or --help for usage information.
+
+# The -s option validates its input
+timecal -s 13
+# Error: Invalid clock time "13" for -s. Accepted formats: H:M, H:M:S, H:M[AM|PM], H:M:S[AM|PM].
+
+# The -c and -s options take no other time input
+timecal -c 5h
+# Error: The -c and -s options cannot be combined with other time input. Use -h or --help for usage information.
+```
+
 ## Output Format Examples
 
 ### Less than 24 Hours (Time Only)
@@ -230,25 +381,31 @@ timecal /?
 If you want to use TimeCal in your Node.js scripts:
 
 ```javascript
-const { parseArguments } = require('@jhauga/timecal/lib/parser');
-const { calculate } = require('@jhauga/timecal/lib/calculator');
-const { formatOutput } = require('@jhauga/timecal/lib/formatter');
+const { timecal, diff } = require('@jhauga/timecal');
 
 // Calculate 5 days ago
-const args = ['5d'];
-const parsed = parseArguments(args);
+console.log(`5 days ago was: ${timecal(['5d'])}`);
+
+// Calculate with multiple units
+console.log(`2 weeks, 3 days, and 12 hours from now: ${timecal(['-f', '2w', '3d', '12h'])}`);
+
+// Difference between two clock times
+console.log(diff('12:10:00AM', '1:25:25PM')); // "13h 15m 25s"
+
+// Invert the clock format of a single clock time
+console.log(diff('21:00'));                   // "9:00 PM"
+```
+
+The lower-level pipeline modules are also available:
+
+```javascript
+const { parseArguments, calculate, formatOutput } = require('@jhauga/timecal');
+
+const parsed = parseArguments(['5d']);
 const result = calculate(parsed);
 const output = formatOutput(result);
 
 console.log(`5 days ago was: ${output}`);
-
-// Calculate with multiple units
-const args2 = ['-f', '2w', '3d', '12h'];
-const parsed2 = parseArguments(args2);
-const result2 = calculate(parsed2);
-const output2 = formatOutput(result2);
-
-console.log(`2 weeks, 3 days, and 12 hours from now: ${output2}`);
 ```
 
 ## Tips and Tricks

@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-13
+
+### Added
+
+- Time difference calculation between two clock times:
+  - Calculates the duration from the first to the second (e.g., `timecal 12:10:00AM 1:25:25PM` returns `13h 15m 25s`)
+  - Clock time syntax: `H`, `H:M`, or `H:M:S` with an optional `AM`/`PM` suffix
+  - Clock time separators: `:` and `.` are both accepted (`13:10:15` and `13.10.15` are equivalent)
+  - `AM`/`PM` may also follow the time as a separate argument (`timecal 9:00 PM`)
+  - 12-hour (`1:25PM`) and 24-hour (`13:25`) formats, which can be mixed in one command
+  - Wrap-around past midnight when the second time is earlier (e.g., `11PM 7AM` returns `8h 0m 0s`)
+  - Duration output format: `Hh Mm Ss` (e.g., `13h 15m 25s`)
+- Duration adjustments by mixing time expressions with two clock times:
+  - Unsigned or `+` expressions add (e.g., `timecal 12AM 1PM 30m` returns `13h 30m 0s`)
+  - `-` expressions subtract (e.g., `timecal 12AM 1PM -30m` returns `12h 30m 0s`)
+  - A negative adjusted duration wraps back within a 24-hour clock
+- Time shifting for a single clock time mixed with time expressions:
+  - The clock time acts as a temporary current time, shifted into the past by default (e.g., `timecal 3:15PM 15m` returns `3:00 PM`)
+  - `-f` or `+`/`-` expressions shift in other directions (e.g., `timecal 3:15PM +15m` returns `3:30 PM`)
+  - The result wraps within a 24-hour clock
+- Format inversion for a single clock time on its own:
+  - 24-hour input renders as an AM/PM clock (e.g., `timecal 21:00` returns `9:00 PM`)
+  - AM/PM input renders as a 24-hour clock (e.g., `timecal 9:00PM` returns `21:00`)
+  - Seconds appear only when the input included them
+- `-c`, `--current` option to show the current time as a clock with seconds:
+  - Optional argument `12` (default) for an AM/PM clock (e.g., `1:10:15 PM`)
+  - Optional argument `24` for a 24-hour clock (e.g., `13:10:15`)
+- `-s`, `--set-current` option to change the current time used by clock-time features:
+  - Accepted inputs: `H:M`, `H:M:S`, `H:M[AM|PM]`, `H:M:S[AM|PM]`
+  - `timecal -s clear` returns to the system time
+  - The override applies to the `-c` display; date calculations always use the system clock
+- JSON config file (`lib/config.js`) storing the current time override:
+  - Default location: `.timecal.json` in the user's home directory
+  - Configurable via the `TIMECAL_CONFIG` environment variable
+- Programmatic API entry point (`lib/index.js`):
+  - `timecal(args)` - run the full parse, calculate, and format pipeline
+  - `diff(start, [end])` - calculate a clock time difference, or invert the format of a single clock time
+  - Re-exports `parseArguments`, `calculate`, and `formatOutput`
+- Clear error messages when more than two clock times are given or an option receives invalid input
+
+### Documentation
+
+- README.md - Time Difference and Current Time sections, new options, and expanded API reference
+- EXAMPLES.md - Time difference, duration adjustment, current time, and override examples; updated programmatic usage
+- QUICKREF.md - Time difference and current time quick reference, new options, duration output format
+- Updated CLI help text (`-h`, `--help`) with the new syntax, options, and examples
+
 ## [1.0.0] - 2026-02-27
 
 ### Added
@@ -84,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.1.0** (2026-08-13) - Time difference calculation, duration adjustments, time shifting, format inversion, current time display and override, programmatic API
 - **1.0.0** (2026-02-27) - Initial release
 
 ---
