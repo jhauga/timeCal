@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-26
+
+### Fixed
+
+- The npm package holds only the program and its documentation: a `files` list in `package.json` keeps `.support/source-graphics.ai`, the source of the logo, out of it. The package's unpacked size falls from about 576 kB to about 75 kB
+
 ## [1.1.0] - 2026-08-13
 
 ### Added
@@ -131,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.1.1** (2026-11-26) - The graphics source is kept out of the npm package
 - **1.1.0** (2026-08-13) - Time difference calculation, duration adjustments, time shifting, format inversion, current time display and override, programmatic API
 - **1.0.0** (2026-02-27) - Initial release
 

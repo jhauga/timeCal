@@ -218,4 +218,4 @@ timecal --help
 
 ---
 
-**TimeCal v1.1.0** | MIT License | Made with ❤️ by jhauga
+**TimeCal v1.1.1** | MIT License | Made with ❤️ by jhauga
